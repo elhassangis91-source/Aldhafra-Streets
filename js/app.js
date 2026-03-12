@@ -12,7 +12,7 @@ function openTab(tabId) {
     if (event && event.currentTarget) event.currentTarget.classList.add('active');
 }
 
-// دالة معالجة النصوص الرسمية (توحيد الحروف وإزالة التشكيل)
+// دالة معالجة النصوص الرسمية
 const normalizeArabic = (text) => {
     if (!text) return "";
     return String(text)
@@ -34,13 +34,12 @@ fetch('data/AllStreets.json').then(r => r.json()).then(data => {
             const vLine = L.polyline(layer.getLatLngs(), { color: "#1a2a6c", weight: 1.5, opacity: 0.5, interactive: false }).addTo(map);
             layer.visibleLine = vLine;
 
-            // التعديل تم هنا: كتابة "حالة تنفيذ اللوحات"
             const popupHTML = `
                 <div style="direction:rtl; text-align:right; font-family: 'Tajawal', sans-serif;">
                     <strong style="font-size:16px; color:#2c3e50;">${props.Name_Ar || 'غير مسمى'}</strong><br>
                     <span style="font-size:13px; color:#95a5a6;">${props.Name_En || ''}</span><hr style="margin:8px 0;">
                     <b>المنطقة الجغرافية:</b> ${props.DistrictName_Arabic || '-'}<br>
-                    <b>الحالة:</b> <span style="color:${statusColor}; font-weight:bold;">${status}</span>
+                    <b>حالة تنفيذ اللوحات:</b> <span style="color:${statusColor}; font-weight:bold;">${status}</span>
                 </div>`;
             layer.bindPopup(popupHTML);
             layer.on('click', () => { highlightStreet(layer); lastSelectedStreet = feature; });
@@ -71,47 +70,73 @@ function calculateFixedLength(name) {
 }
 
 // ---------------------------------------------------------
-// مساعد الذكاء الاصطناعي - نظام الردود الرسمية المطور
+// مساعد الذكاء الاصطناعي 
 // ---------------------------------------------------------
-// استبدل دالة processAI الموجودة في الملف بهذه النسخة المطورة
-// تحديث دالة معالجة الذكاء الاصطناعي لدعم الذاكرة والمطابقة المرنة
-// المساعد الذكي - نسخة الفهم العميق والذاكرة المحدثة
+// ---------------------------------------------------------
+// مساعد الذكاء الاصطناعي - الفلترة الذكية للحالة
+// ---------------------------------------------------------
+// ---------------------------------------------------------
+// مساعد الذكاء الاصطناعي - الفلترة الذكية للحالة
+// ---------------------------------------------------------
 function processAI(query) {
     const qRaw = query.toLowerCase();
     const qNorm = normalizeArabic(query);
-    // إزالة علامات الاستفهام لضمان دقة البحث
     const qText = qNorm.replace(/[؟?]/g, "");
     
     let reply = "نعتذر، لم يتم العثور على نتائج مطابقة للاستعلام الحالي. يرجى التأكد من المسمى الصحيح للشارع أو المنطقة.";
 
-    // 1. نظام إحصائيات المدن (عدد الشوارع) - مفصول بالكامل
+    // 1. نظام إحصائيات المدن والحالات (عدد الشوارع / منفذ / غير منفذ)
     if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("كم شارع")) {
         const districts = [...new Set(geojsonData.features.map(f => f.properties.DistrictName_Arabic).filter(Boolean))];
         let targetDistrict = null;
         
+        // التعرف على المنطقة
         districts.forEach(d => {
             const dNorm = normalizeArabic(d);
-            // استخراج الاسم الأساسي للمدينة (مثل "غياثي") وتجاهل "مدينة/منطقة"
             const coreName = dNorm.replace(/\b(منطقه|مدينه)\b/g, "").trim();
             if (coreName && qText.includes(coreName)) {
                 targetDistrict = d;
             }
         });
 
+        // التعرف الذكي على حالة التنفيذ (عشان نتجاوز الألف واللام)
+        let targetStatus = null;
+        if (qText.includes("منفذ")) {
+            if (qText.includes("غير")) {
+                targetStatus = "غير منفذ";
+            } else {
+                targetStatus = "منفذ";
+            }
+        }
+
+        // فلترة البيانات بناءً على المنطقة والحالة
+        let filteredData = geojsonData.features;
+        
         if (targetDistrict) {
-            const count = geojsonData.features.filter(f => f.properties.DistrictName_Arabic === targetDistrict).length;
-            reply = `بناءً على البيانات المتاحة، يبلغ عدد الشوارع في ${targetDistrict} ( ${count} ) شارعاً مسجلاً.`;
-        } else {
-            reply = `إجمالي عدد الشوارع المسجلة في قاعدة البيانات هو ${geojsonData.features.length} شارعاً.`;
+            filteredData = filteredData.filter(f => f.properties.DistrictName_Arabic === targetDistrict);
         }
         
-        // نرسل الرد وننهي الدالة هنا عشان ما يدخلش في بحث الشوارع
+        if (targetStatus) {
+            filteredData = filteredData.filter(f => {
+                const status = f.properties.Status || "";
+                if (targetStatus === "غير منفذ") return status.includes("غير منفذ");
+                return status.includes("منفذ") && !status.includes("غير منفذ");
+            });
+        }
+
+        const count = filteredData.length;
+        
+        // صياغة الرد
+        let statusLabel = targetStatus === "غير منفذ" ? "غير المنفذة " : (targetStatus === "منفذ" ? "المنفذة " : "");
+        let districtLabel = targetDistrict ? `في منطقة ${targetDistrict}` : "في قاعدة البيانات";
+        
+        reply = `بناءً على البيانات المتاحة، يبلغ عدد الشوارع ${statusLabel}${districtLabel} ( ${count} ) شارعاً.`;
+        
         setTimeout(() => addMessage(reply, 'bot'), 400);
         return;
     }
 
     // 2. البحث عن اسم الشارع (الوضع الافتراضي)
-    // استبعاد كافة الكلمات التي قد تشوش على اسم الشارع
     const stopWords = /\b(اين|يقع|فين|شارع|طريق|ما|هو|هي|في|كم|طوله|طول|عن|موقع|اريد|معرفة|منطقه|مدينه)\b/g;
     const qClean = qText.replace(stopWords, "").trim();
     
@@ -119,23 +144,20 @@ function processAI(query) {
     if (qClean.length > 2) {
         geojsonData.features.forEach(f => {
             const sName = normalizeArabic(f.properties.Name_Ar);
-            // مطابقة مرنة (لو جزء من الاسم أو الاسم كله)
             if (sName && (qClean.includes(sName) || sName.includes(qClean))) {
                 currentMatch = f;
             }
         });
     }
 
-    // 3. تحديد الشارع (الجديد يلغي القديم، ونستخدم الذاكرة لو سأل عن الطول بس)
     let targetStreet = null;
     if (currentMatch) {
         targetStreet = currentMatch;
-        lastSelectedStreet = currentMatch; // تحديث الذاكرة بالشارع الجديد
+        lastSelectedStreet = currentMatch; 
     } else if (qText.includes("طول") || qText.includes("كم")) {
-        targetStreet = lastSelectedStreet; // استدعاء من الذاكرة
+        targetStreet = lastSelectedStreet; 
     }
 
-    // 4. صياغة الرد للشارع وتنفيذ زووم الخريطة
     if (targetStreet) {
         const name = targetStreet.properties.Name_Ar;
         const district = targetStreet.properties.DistrictName_Arabic || "المنطقة المحددة";
@@ -168,10 +190,9 @@ function addMessage(text, side) {
 }
 
 window.onload = () => {
-    // تحديث الرسالة الترحيبية لتكون رسمية عند التحميل
     const chatBox = document.getElementById('chat-box');
     if (chatBox) {
-        chatBox.innerHTML = '<div class="bot-msg">نظام المساعد الذكي لمنصة الظفرة. يمكنكم الاستعلام عن أطوال الشوارع، إحصائيات المناطق، أو تحديد موقع عنصر جغرافي معين.</div>';
+        chatBox.innerHTML = '<div class="bot-msg">أهلاً بك يا هندسة! أنا مساعدك الذكي. اسألني عن أطوال الشوارع، إحصائيات المدن، أو اطلب معلومات عن شارع معين.</div>';
     }
 
     const sendBtn = document.getElementById('send-ai-btn');
@@ -181,23 +202,16 @@ window.onload = () => {
     if(input) input.onkeypress = (e) => { if(e.key === 'Enter') send(); };
 };
 
-// محرك قائمة البحث الجانبية
-// محرك قائمة البحث الجانبية (مطور لدعم الأرقام التعريفية بدقة)
+// محرك قائمة البحث (يدعم الأرقام العربية والإنجليزية)
 document.getElementById('searchBox').oninput = (e) => {
     let rawTerm = e.target.value.trim();
-    
-    // تحويل الأرقام العربية (الهندية) إلى إنجليزية فوراً لضمان التطابق مع قاعدة البيانات
     const englishNumbersTerm = rawTerm.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
-    
     const termNorm = normalizeArabic(englishNumbersTerm);
     const termLower = englishNumbersTerm.toLowerCase();
 
     const filtered = geojsonData.features.filter(f => {
         const nameAr = normalizeArabic(f.properties.Name_Ar);
-        // تحويل الرقم التعريفي إلى نص صريح لضمان عدم حدوث خطأ برمجي
         const roadID = String(f.properties.RoadID || "").toLowerCase();
-        
-        // البحث يشمل الاسم أو الرقم التعريفي
         return nameAr.includes(termNorm) || roadID.includes(termLower);
     });
     
@@ -222,4 +236,5 @@ function renderList(features) {
         };
         list.appendChild(div);
     });
+    document.getElementById('stats').innerText = `العناصر الظاهرة: ${features.length}`;
 }
