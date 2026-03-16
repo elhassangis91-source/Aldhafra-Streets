@@ -137,7 +137,7 @@ function processAI(query) {
     }
 
     // 2. البحث عن اسم الشارع (الوضع الافتراضي)
-    const stopWords = /\b(اين|يقع|فين|شارع|طريق|ما|هو|هي|في|كم|طوله|طول|عن|موقع|اريد|معرفة|منطقه|مدينه)\b/g;
+    const stopWords = /\b(اين|يقع|فين|شارع|طريق|وين|ما|هو|هي|في|كم|طوله|طول|عن|موقع|اريد|معرفة|منطقه|مدينه)\b/g;
     const qClean = qText.replace(stopWords, "").trim();
     
     let currentMatch = null;
@@ -192,7 +192,7 @@ function addMessage(text, side) {
 window.onload = () => {
     const chatBox = document.getElementById('chat-box');
     if (chatBox) {
-        chatBox.innerHTML = '<div class="bot-msg">أهلاً بك يا هندسة! أنا مساعدك الذكي. اسألني عن أطوال الشوارع، إحصائيات المدن، أو اطلب معلومات عن شارع معين.</div>';
+        chatBox.innerHTML = '<div class="bot-msg">أهلاً بك أنا مساعدك الذكي. كيف يمكنني مساعدتك.</div>';
     }
 
     const sendBtn = document.getElementById('send-ai-btn');
