@@ -11,6 +11,23 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>
+    function openTab(tabId) {
+        // إخفاء المحتويات
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        // إلغاء تفعيل الأزرار
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        
+        // إظهار التبويب المختار
+        const selectedTab = document.getElementById(tabId);
+        if (selectedTab) selectedTab.classList.add('active');
+        
+        // تفعيل الزرار اللي اضغط عليه
+        if (window.event && window.event.currentTarget) {
+            window.event.currentTarget.classList.add('active');
+        }
+    }
+</script>
 </head>
 <body>
 
