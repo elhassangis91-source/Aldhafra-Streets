@@ -1,8 +1,18 @@
-/* الإعدادات العامة */
-* { box-sizing: border-box; }
-body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #f0f2f5; }
+/* 1. الإعدادات العامة (الكمبيوتر والجوال) */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Tajawal', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #f0f2f5; }
 
-/* القائمة الجانبية - وضع الكمبيوتر */
+/* الخريطة: ثابتة في الخلفية وتملأ كامل الشاشة دائماً */
+#map { 
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; 
+}
+
+/* 2. وضع الكمبيوتر (Sidebar بالجانب) */
 #sidebar { 
     width: 350px; 
     background: #f8f9fa; 
@@ -10,22 +20,12 @@ body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex;
     display: flex; 
     flex-direction: column; 
     position: relative; 
-    z-index: 1000; 
+    z-index: 1000; /* فوق الخريطة */
+    height: 100%;
 }
 
-/* الخريطة - تأخذ كامل المساحة دائماً */
-#map { 
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1; 
-}
-
-/* التبويبات */
 .sidebar-tabs { display: flex; background: #1a2a6c; padding: 5px; gap: 5px; }
-.tab-btn { flex: 1; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; border-radius: 4px; font-family: 'Tajawal'; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; border-radius: 4px; font-family: 'Tajawal'; font-size: 14px; }
 .tab-btn.active { background: white; color: #1a2a6c; font-weight: bold; }
 
 .tab-content { display: none; flex-direction: column; height: 100%; overflow: hidden; }
@@ -34,15 +34,39 @@ body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex;
 /* الدردشة */
 .chat-container { display: flex; flex-direction: column; height: 100%; position: relative; background: #ffffff; }
 #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px; }
-
-.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; }
 .user-msg { align-self: flex-start; background: #1a2a6c; color: white; border-bottom-left-radius: 2px; }
 .bot-msg { align-self: flex-end; background: #e9ecef; color: #333; border-bottom-right-radius: 2px; direction: rtl; }
 
 .chat-input-area { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; padding: 12px; background: white; border-top: 1px solid #eee; z-index: 10; }
-#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Tajawal'; font-size: 16px; }
+#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-size: 16px; }
 #send-ai-btn { background: #1a2a6c; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
 
-/* البحث */
-.sidebar-header { padding: 15px; border-bottom: 1px solid #eee; }
-#searchBox { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size:
+/* 3. 📱 إعدادات الجوال (الأسفل حصراً) */
+@media (max-width: 768px) {
+    /* إلغاء نظام الـ Flex الخاص بالكمبيوتر لضمان بقاء العناصر تحت بعضها */
+    body { display: block; } 
+
+    #sidebar { 
+        position: fixed; /* تثبيت مطلق */
+        bottom: 0; /* في الأسفل تماماً */
+        left: 0;
+        right: 0;
+        width: 100%; 
+        height: 45vh; /* 45% من ارتفاع الشاشة فقط */
+        border-left: none;
+        border-top: 3px solid #1a2a6c;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        box-shadow: 0 -10px 25px rgba(0,0,0,0.2);
+        z-index: 2000; /* ليكون فوق الخريطة وفوق كل شيء */
+    }
+
+    #map { 
+        height: 100vh; /* الخريطة تملأ الخلفية */
+    }
+
+    /* تكبير منطقة اللمس في الجوال */
+    .tab-btn { padding: 15px; font-size: 16px; }
+    #ai-input { padding: 12px; }
+}
