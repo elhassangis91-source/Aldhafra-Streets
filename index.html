@@ -7,7 +7,7 @@
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -37,10 +37,7 @@
                         <input type="text" id="ai-input" placeholder="اكتب سؤالك أو اطلب تقريرًا...">
                         <button id="send-ai-btn">إرسال</button>
                     </div>
-                    <button onclick="showExportModal()" id="main-report-btn" style="width:100%; margin-top:10px; background:#27ae60; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-family:'Tajawal'; font-weight:bold;">
-                        📄 تصدير التقرير الحالي
-                    </button>
-                </div>
+                    </div>
             </div>
         </div>
     </div>
@@ -57,3 +54,12 @@
             </select>
             <div style="display:flex; gap:12px;">
                 <button onclick="executeExport()" style="flex:1; background:#27ae60; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">حفظ</button>
+                <button onclick="closeExportModal()" style="flex:1; background:#95a5a6; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer;">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/app.js?v=4"></script>
+</body>
+</html>
