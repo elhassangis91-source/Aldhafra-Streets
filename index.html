@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>منصة الظفرة الذكية</title>
+    <title>منصة الظفرة الذكية - إحصائيات الشوارع</title>
+    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css?v=2">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=2"></script>
+    <link rel="stylesheet" href="css/style.css?v=3">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
     <div id="sidebar">
         <div id="resizer"></div>
-        
         <div class="sidebar-content">
             <div class="sidebar-tabs">
                 <button class="tab-btn active" onclick="openTab('search-tab')">🔍 البحث</button>
@@ -30,13 +32,14 @@
 
             <div id="ai-tab" class="tab-content">
                 <div class="chat-container">
-                    <div id="chat-box">
-                        <div class="bot-msg">أهلاً بك يا هندسة! أنا مساعدك الذكي. اسألني عن أطوال الشوارع، إحصائيات المدن، أو اطلب معلومات عن شارع معين.</div>
-                    </div>
+                    <div id="chat-box"></div>
                     <div class="chat-input-area">
-                        <input type="text" id="ai-input" placeholder="اكتب سؤالك هنا...">
+                        <input type="text" id="ai-input" placeholder="اكتب سؤالك أو اطلب تقريرًا...">
                         <button id="send-ai-btn">إرسال</button>
                     </div>
+                    <button onclick="showExportModal()" id="main-report-btn" style="width:100%; margin-top:10px; background:#27ae60; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-family:'Tajawal'; font-weight:bold;">
+                        📄 تصدير التقرير الحالي
+                    </button>
                 </div>
             </div>
         </div>
@@ -44,8 +47,13 @@
 
     <div id="map"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="js/app.js"></script>
-</body>
-
-</html>
+    <div id="exportModal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(3px);">
+        <div style="background:white; width:320px; margin:15% auto; padding:25px; border-radius:12px; text-align:center; font-family:'Tajawal'; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <h3 style="color:#1a2a6c; margin-bottom:15px;">حفظ التقرير</h3>
+            <p style="font-size:14px; color:#666; margin-bottom:20px;">يرجى تحديد الصيغة المناسبة لتحميل البيانات:</p>
+            <select id="fileFormat" style="width:100%; padding:12px; margin-bottom:25px; border-radius:6px; border:1px solid #ddd; font-family:'Tajawal';">
+                <option value="pdf">ملف PDF (للطباعة)</option>
+                <option value="excel">ملف Excel (للبيانات)</option>
+            </select>
+            <div style="display:flex; gap:12px;">
+                <button onclick="executeExport()" style="flex:1; background:#27ae60; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">حفظ</button>
