@@ -1,56 +1,84 @@
-// 1. نظام التبويبات (Tabs) - لضمان العمل من الـ HTML
-window.openTab = function(tabId) {
+// 1. تعريف المتغيرات العامة
+let map, allStreetsLayer, geojsonData;
+
+// 2. دالة فتح التبويبات (Tabs) - لازم تكون window عشان الـ HTML يشوفها
+window.openTab = function(tabId, event) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    const selectedTab = document.getElementById(tabId);
-    if (selectedTab) selectedTab.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
     if (event && event.currentTarget) event.currentTarget.classList.add('active');
 };
 
-// 2. إعداد الخريطة والبيز ماب (على الشمال)
-const baseMaps = {
-    "Google Maps": L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }),
-    "Imagery": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] }),
-    "Light Gray": L.tileLayer('https://Basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { maxZoom: 20 })
+// 3. تشغيل الخريطة والبيانات عند تحميل الصفحة
+window.onload = function() {
+    // إنشاء الخريطة
+    map = L.map('map').setView([23.65, 53.70], 9);
+
+    // إضافة خريطة جوجل
+    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    }).addTo(map);
+
+    // تحميل البيانات (Fetch)
+    fetch(`data/AllStreets.json?v=${new Date().getTime()}`)
+        .then(res => res.json())
+        .then(data => {
+            geojsonData = data;
+            
+            // رسم الشوارع على الخريطة
+            allStreetsLayer = L.geoJSON(data, {
+                style: { color: "#1a2a6c", weight: 2, opacity: 0.6 },
+                onEachFeature: function(feature, layer) {
+                    layer.bindPopup(`<b>${feature.properties.Name_Ar}</b>`);
+                    layer.on('click', () => highlightStreet(layer));
+                }
+            }).addTo(map);
+
+            // عرض عينة بسيطة في القائمة أول ما يفتح (عشان السرعة)
+            renderList(data.features.slice(0, 15));
+            document.getElementById('stats').innerText = `تم تحميل ${data.features.length} شارع`;
+        });
 };
 
-const map = L.map('map', { center: [23.65, 53.70], zoom: 9, layers: [baseMaps["Google Maps"]] });
-L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
+// 4. دالة البحث السلسة (اللي اتكلمنا عنها)
+document.getElementById('searchBox').addEventListener('input', function() {
+    if (!geojsonData) return;
 
-let allStreetsLayer, geojsonData, lastSelectedStreet = null;
+    const value = this.value.toLowerCase().trim();
 
-// 3. جلب البيانات (Fetch)
-fetch(`data/AllStreets.json?v=${new Date().getTime()}`)
-    .then(r => r.json())
-    .then(data => {
-        geojsonData = data;
-        allStreetsLayer = L.geoJSON(data, {
-            onEachFeature: function(feature, layer) {
-                layer.setStyle({ color: "#1a2a6c", weight: 40, opacity: 0 });
-                const vLine = L.polyline(layer.getLatLngs(), { color: "#1a2a6c", weight: 2, opacity: 0.6, interactive: false }).addTo(map);
-                layer.visibleLine = vLine;
-                layer.on('click', () => highlightStreet(layer));
-            }
-        }).addTo(map);
-        renderList(data.features);
-        document.getElementById('stats').innerText = `تم تحميل ${data.features.length} شارعاً`;
-    })
-    .catch(err => console.error("Error loading JSON:", err));
+    // لو البحث فاضي، اعرض عينة بسيطة
+    if (value === "") {
+        renderList(geojsonData.features.slice(0, 15));
+        return;
+    }
 
-// 4. وظائف البحث والقائمة
+    // الفلترة اللحظية
+    const filtered = geojsonData.features.filter(f => {
+        const name = (f.properties.Name_Ar || "").toLowerCase();
+        const id = String(f.properties.RoadID);
+        return name.includes(value) || id.includes(value);
+    });
+
+    // عرض النتايج (بحد أقصى 100 عشان الجهاز ما يهنجش)
+    renderList(filtered.slice(0, 100));
+});
+
+// 5. دالة إنشاء القائمة
 function renderList(features) {
     const list = document.getElementById('resultsList');
     if (!list) return;
     list.innerHTML = '';
-    features.slice(0, 100).forEach(f => {
+    
+    features.forEach(f => {
         const div = document.createElement('div');
         div.className = 'street-item';
         div.innerHTML = `<b>${f.properties.Name_Ar}</b><br><small>ID: ${f.properties.RoadID}</small>`;
+        
         div.onclick = () => {
             allStreetsLayer.eachLayer(l => {
                 if (String(l.feature.properties.RoadID) === String(f.properties.RoadID)) {
                     highlightStreet(l);
-                    map.flyToBounds(l.getBounds(), { maxZoom: 18 });
+                    map.fitBounds(l.getBounds(), { maxZoom: 18 });
                 }
             });
         };
@@ -58,10 +86,10 @@ function renderList(features) {
     });
 }
 
+// 6. دالة تمييز الشارع (Highlight)
 function highlightStreet(layer) {
-    allStreetsLayer.eachLayer(l => { if (l.visibleLine) l.visibleLine.setStyle({ color: "#1a2a6c", weight: 2, opacity: 0.6 }); });
-    if (layer.visibleLine) layer.visibleLine.setStyle({ color: "#ff0000", weight: 6, opacity: 1 }).bringToFront();
-    layer.openPopup();
+    allStreetsLayer.eachLayer(l => l.setStyle({ color: "#1a2a6c", weight: 2 }));
+    layer.setStyle({ color: "red", weight: 6 }).bringToFront();
 }
 
 // 5. محرك الذكاء الاصطناعي (AI Engine)
