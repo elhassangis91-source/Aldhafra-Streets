@@ -1,41 +1,37 @@
-body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: 'Tajawal', sans-serif; }
-#map { height: 100vh; width: 100%; position: absolute; z-index: 1; background: #f0f0f0; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex; height: 100vh; overflow: hidden; }
 
-#sidebar {
-    position: absolute; top: 15px; right: 15px; width: 350px; min-width: 250px; max-width: 800px;
-    height: calc(100% - 30px); background: white; z-index: 2000; 
-    border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    display: flex; flex-direction: row-reverse; overflow: hidden;
-}
+#sidebar { width: 350px; background: #f8f9fa; border-left: 1px solid #ddd; display: flex; flex-direction: column; position: relative; z-index: 1000; transition: width 0.3s; }
+#map { flex: 1; height: 100%; z-index: 1; }
 
-#resizer { width: 8px; cursor: ew-resize; background: #2c3e50; flex-shrink: 0; }
-.sidebar-content { display: flex; flex-direction: column; height: 100%; flex-grow: 1; overflow: hidden; }
+.sidebar-tabs { display: flex; background: #1a2a6c; padding: 5px; gap: 5px; }
+.tab-btn { flex: 1; padding: 10px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; border-radius: 4px; font-family: 'Tajawal'; }
+.tab-btn.active { background: white; color: #1a2a6c; font-weight: bold; }
 
-.sidebar-tabs { display: flex; background: #34495e; z-index: 2005; }
-.tab-btn { flex: 1; padding: 12px; border: none; background: none; color: #bdc3c7; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; }
-.tab-btn.active { color: white; background: #2c3e50; border-bottom: 3px solid #3498db; }
-
-.tab-content { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
 .tab-content.active { display: flex; }
 
-.sidebar-header { padding: 15px; background: #2c3e50; color: white; }
-#searchBox { width: 100%; padding: 10px; border-radius: 5px; border: none; font-family: 'Tajawal'; box-sizing: border-box; }
+.sidebar-header { padding: 15px; border-bottom: 1px solid #eee; }
+#searchBox { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+#stats { font-size: 12px; color: #666; margin-top: 8px; }
 
-#resultsList { flex: 1; overflow-y: auto; background: #fff; }
-.street-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; text-align: right; }
-.street-item:hover { background: #f1f1f1; }
+#resultsList { flex: 1; overflow-y: auto; padding: 10px; }
+.street-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s; border-radius: 4px; }
+.street-item:hover { background: #e9ecef; }
 
-/* شات البوت */
-.chat-container { display: flex; flex-direction: column; height: 100%; background: #fdfdfd; }
-#chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-.bot-msg { background: #f0f2f5; align-self: flex-start; padding: 10px; border-radius: 10px; border-right: 4px solid #3498db; max-width: 85%; font-size: 14px; text-align: right; color: #333; }
-.user-msg { background: #3498db; color: white; align-self: flex-end; padding: 10px; border-radius: 10px; max-width: 85%; font-size: 14px; text-align: right; }
+.chat-container { display: flex; flex-direction: column; height: 100%; padding: 10px; background: #fdfdfd; }
+#chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 10px; }
+.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.user-msg { align-self: flex-start; background: #1a2a6c; color: white; border-bottom-left-radius: 2px; }
+.bot-msg { align-self: flex-end; background: #e9ecef; color: #333; border-bottom-right-radius: 2px; direction: rtl; }
 
-.chat-input-area { padding: 10px; display: flex; gap: 5px; background: white; border-top: 1px solid #eee; }
-#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-family: 'Tajawal'; }
-#send-ai-btn { background: #2c3e50; color: white; border: none; padding: 0 15px; border-radius: 5px; cursor: pointer; font-family: 'Tajawal'; font-weight: bold; }
-#send-ai-btn:hover { background: #34495e; }
+.chat-input-area { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid #eee; }
+#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; outline: none; }
+#send-ai-btn { background: #1a2a6c; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; }
 
-.print-btn { background: #e74c3c; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-family: 'Tajawal'; }
-
-@media (max-width: 768px) { #sidebar { width: 90% !important; height: 35%; top: auto; bottom: 15px; right: 5%; } #resizer { display: none; } }
+/* استجابة الموبايل */
+@media (max-width: 768px) {
+    body { flex-direction: column; }
+    #sidebar { width: 100%; height: 40%; border-left: none; border-top: 1px solid #ddd; order: 2; }
+    #map { height: 60%; order: 1; }
+}
