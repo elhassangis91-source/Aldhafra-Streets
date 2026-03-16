@@ -85,10 +85,77 @@ function processAI(query) {
     
     let reply = "نعتذر، لم يتم العثور على نتائج مطابقة للاستعلام الحالي. يرجى التأكد من المسمى الصحيح للشارع أو المنطقة.";
 
-    // 1. نظام إحصائيات المدن والحالات (عدد الشوارع / منفذ / غير منفذ)
+    // 1. نظام إحصائيات المدن والحالات مع بناء جدول للتقرير
     if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("كم شارع")) {
         const districts = [...new Set(geojsonData.features.map(f => f.properties.DistrictName_Arabic).filter(Boolean))];
         let targetDistrict = null;
+        
+        districts.forEach(d => {
+            const dNorm = normalizeArabic(d);
+            const coreName = dNorm.replace(/\b(منطقه|مدينه)\b/g, "").trim();
+            if (coreName && qText.includes(coreName)) { targetDistrict = d; }
+        });
+
+        let targetStatus = null;
+        if (qText.includes("منفذ")) {
+            targetStatus = qText.includes("غير") ? "غير منفذ" : "منفذ";
+        }
+
+        let filteredData = geojsonData.features;
+        if (targetDistrict) { filteredData = filteredData.filter(f => f.properties.DistrictName_Arabic === targetDistrict); }
+        if (targetStatus) {
+            filteredData = filteredData.filter(f => {
+                const status = f.properties.Status || "";
+                return targetStatus === "غير منفذ" ? status.includes("غير منفذ") : (status.includes("منفذ") && !status.includes("غير منفذ"));
+            });
+        }
+
+        const count = filteredData.length;
+        let statusLabel = targetStatus === "غير منفذ" ? "غير المنفذة " : (targetStatus === "منفذ" ? "المنفذة " : "");
+        let districtLabel = targetDistrict ? `في منطقة ${targetDistrict}` : "في منطقة الظفرة ككل";
+        
+        // إنشاء الرد النصي
+        reply = `إليك التقرير المطلوب: عدد الشوارع ${statusLabel}${districtLabel} هو ( ${count} ) شارعاً. يمكنك تحميل الجدول كملف PDF من الزر أدناه.`;
+        
+        // بناء الجدول بتنسيق HTML للعرض والطباعة
+        let tableHTML = `
+            <div id="report-to-print" style="direction:rtl; padding:20px; font-family:'Tajawal', sans-serif;">
+                <h2 style="text-align:center; color:#1a2a6c;">تقرير الشوارع - منصة الظفرة الذكية</h2>
+                <p><b>نطاق البحث:</b> ${districtLabel} | <b>الحالة:</b> ${statusLabel || 'الكل'}</p>
+                <table border="1" style="width:100%; border-collapse:collapse; margin-top:10px; text-align:center;">
+                    <thead>
+                        <tr style="background:#f2f2f2;">
+                            <th style="padding:8px;">الرقم التعريفي</th>
+                            <th style="padding:8px;">الاسم بالعربي</th>
+                            <th style="padding:8px;">الاسم بالإنجليزي</th>
+                            <th style="padding:8px;">حالة التنفيذ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredData.map(f => `
+                            <tr>
+                                <td style="padding:5px;">${f.properties.RoadID || '-'}</td>
+                                <td style="padding:5px;">${f.properties.Name_Ar || '-'}</td>
+                                <td style="padding:8px;">${f.properties.Name_En || '-'}</td>
+                                <td style="padding:5px;">${f.properties.Status || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+
+        setTimeout(() => {
+            addMessage(reply, 'bot');
+            // إضافة الجدول داخل رسالة البوت
+            const box = document.getElementById('chat-box');
+            const tableDiv = document.createElement('div');
+            tableDiv.innerHTML = tableHTML;
+            tableDiv.style.overflowX = "auto";
+            box.appendChild(tableDiv);
+            box.scrollTop = box.scrollHeight;
+        }, 400);
+        return;
+    }
         
         // التعرف على المنطقة
         districts.forEach(d => {
