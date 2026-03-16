@@ -1,4 +1,4 @@
-/* الإعدادات العامة للموبايل والكمبيوتر */
+/* الإعدادات العامة */
 * { box-sizing: border-box; }
 body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex; height: 100vh; overflow: hidden; background: #f0f2f5; }
 
@@ -11,88 +11,38 @@ body { margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; display: flex;
     flex-direction: column; 
     position: relative; 
     z-index: 1000; 
-    transition: all 0.3s ease;
 }
 
-#map { flex: 1; height: 100%; z-index: 1; }
+/* الخريطة - تأخذ كامل المساحة دائماً */
+#map { 
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1; 
+}
 
 /* التبويبات */
 .sidebar-tabs { display: flex; background: #1a2a6c; padding: 5px; gap: 5px; }
-.tab-btn { flex: 1; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; border-radius: 4px; font-family: 'Tajawal'; font-size: 14px; }
+.tab-btn { flex: 1; padding: 12px; border: none; background: rgba(255,255,255,0.1); color: white; cursor: pointer; border-radius: 4px; font-family: 'Tajawal'; }
 .tab-btn.active { background: white; color: #1a2a6c; font-weight: bold; }
 
 .tab-content { display: none; flex-direction: column; height: 100%; overflow: hidden; }
 .tab-content.active { display: flex; }
 
-/* حاوية الدردشة */
-.chat-container { 
-    display: flex; 
-    flex-direction: column; 
-    height: 100%; 
-    position: relative;
-    background: #ffffff;
-}
+/* الدردشة */
+.chat-container { display: flex; flex-direction: column; height: 100%; position: relative; background: #ffffff; }
+#chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 80px; }
 
-#chat-box { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 15px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px;
-    padding-bottom: 80px; /* مساحة لضمان عدم اختفاء الرسائل خلف المربع */
-}
+.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.user-msg { align-self: flex-start; background: #1a2a6c; color: white; border-bottom-left-radius: 2px; }
+.bot-msg { align-self: flex-end; background: #e9ecef; color: #333; border-bottom-right-radius: 2px; direction: rtl; }
 
-/* شكل الرسائل */
-.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-wrap: break-word; }
-.user-msg { align-self: flex-start; background: #1a2a6c; color: white; border-bottom-left-radius: 2px; text-align: right; }
-.bot-msg { align-self: flex-end; background: #e9ecef; color: #333; border-bottom-right-radius: 2px; direction: rtl; text-align: right; }
+.chat-input-area { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 8px; padding: 12px; background: white; border-top: 1px solid #eee; z-index: 10; }
+#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Tajawal'; font-size: 16px; }
+#send-ai-btn { background: #1a2a6c; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
 
-/* مربع الكتابة - تحسين للموبايل */
-.chat-input-area { 
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: flex; 
-    gap: 8px; 
-    padding: 12px; 
-    background: white; 
-    border-top: 1px solid #eee;
-    z-index: 10;
-}
-
-#ai-input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Tajawal'; font-size: 16px; /* منع الزووم التلقائي في أيفون */ }
-#send-ai-btn { background: #1a2a6c; color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-
-/* القائمة الجانبية للبحث */
+/* البحث */
 .sidebar-header { padding: 15px; border-bottom: 1px solid #eee; }
-#searchBox { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-#resultsList { flex: 1; overflow-y: auto; padding: 10px; }
-.street-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
-
-/* 📱 إعدادات خاصة بالجوال (Responsive) */
-@media (max-width: 768px) {
-    body { flex-direction: column; }
-    
-    #sidebar { 
-        width: 100%; 
-        height: 50%; /* نصف الشاشة للقائمة والدردشة */
-        order: 2; 
-        border-left: none;
-        border-top: 2px solid #1a2a6c;
-    }
-    
-    #map { 
-        width: 100%;
-        height: 50%; /* نصف الشاشة للخريطة */
-        order: 1; 
-    }
-
-    .user-msg, .bot-msg { max-width: 90%; }
-    
-    /* تكبير الأزرار لتسهيل اللمس */
-    .tab-btn { padding: 15px; font-size: 16px; }
-    
-    #chat-box { padding: 10px; }
-}
+#searchBox { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size:
