@@ -1,29 +1,35 @@
-// 1. تعريف أنواع الخرائط (Base Maps) بالروابط الآمنة HTTPS
+// 1. تعريف الدالة في البداية عشان الـ HTML يشوفها فوراً
+function openTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) selectedTab.classList.add('active');
+    if (window.event && window.event.currentTarget) window.event.currentTarget.classList.add('active');
+}
+
+// 2. تعريف أنواع الخرائط (Base Maps) بالروابط الآمنة HTTPS
 const baseMaps = {
     "Google Maps": L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     }),
-    "Imagery (أقمار صناعية)": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    "Imagery (الأقمار الصناعية)": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
     }),
     "Light Gray (خريطة رمادية)": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 20
     })
 };
 
-// 2. إعداد الخريطة والنوع الافتراضي
+// 3. إعداد الخريطة والتحكم في الطبقات (على الشمال بجانب الزووم)
 const map = L.map('map', {
     center: [23.65, 53.70],
     zoom: 9,
     layers: [baseMaps["Google Maps"]]
 });
 
-// 3. إضافة أداة الاختيار في جهة اليسار (topleft) بجانب أزرار الزووم
-L.control.layers(baseMaps, null, { 
-    position: 'topleft' 
-}).addTo(map);
+L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
+
+// ... باقي كود الـ Fetch وحساب الأطوال (calculateFixedLength) اللي بيدعم MultiLineString
 
 // 4. استكمال جلب البيانات (مع معالجة خطأ الـ Fetch)
 fetch('data/AllStreets.json')
