@@ -1,4 +1,4 @@
-/* 1. الإعدادات الأساسية للخط والجسم */
+/* 1. الإعدادات الأساسية - تصفير المسافات */
 * { 
     box-sizing: border-box; 
     margin: 0; 
@@ -10,10 +10,10 @@ body {
     height: 100vh; 
     overflow: hidden; 
     background: #f0f2f5; 
-    display: flex; /* للكمبيوتر */
+    display: flex; /* وضع الكمبيوتر الافتراضي */
 }
 
-/* 2. الخريطة: تملأ الشاشة بالكامل خلف العناصر */
+/* 2. الخريطة: تملأ الخلفية بالكامل */
 #map { 
     position: absolute;
     top: 0;
@@ -35,7 +35,7 @@ body {
     z-index: 1000; 
 }
 
-/* التبويبات العلوية (البحث و AI) */
+/* التبويبات (البحث و AI) */
 .sidebar-tabs { 
     display: flex; 
     background: #1a2a6c; 
@@ -53,7 +53,6 @@ body {
     border-radius: 4px; 
     font-family: 'Tajawal'; 
     font-size: 14px; 
-    transition: 0.3s;
 }
 
 .tab-btn.active { 
@@ -73,7 +72,7 @@ body {
     display: flex; 
 }
 
-/* 4. تنسيق مربع البحث (لحل مشكلة التداخل) */
+/* 4. تنسيق مربع البحث (منظم وبدون تداخل) */
 .sidebar-header { 
     padding: 15px; 
     background: #ffffff; 
@@ -93,7 +92,10 @@ body {
     font-size: 14px;
 }
 
-#searchBox:focus { border-color: #1a2a6c; }
+#searchBox:focus { 
+    border-color: #1a2a6c; 
+    box-shadow: 0 0 5px rgba(26, 42, 108, 0.1);
+}
 
 #resultsList { 
     flex: 1; 
@@ -107,9 +109,11 @@ body {
     cursor: pointer; 
 }
 
-.street-item:hover { background: #e9ecef; }
+.street-item:hover { 
+    background: #e9ecef; 
+}
 
-/* 5. منطقة الدردشة (AI Tab) */
+/* 5. منطقة الدردشة (مساعد AI) */
 .chat-container { 
     display: flex; 
     flex-direction: column; 
@@ -183,9 +187,11 @@ body {
     cursor: pointer; 
 }
 
-/* 6. 📱 إعدادات الجوال (الظهور أسفل الشاشة) */
+/* 6. إعدادات الجوال (عائمة أسفل الشاشة) */
 @media (max-width: 768px) {
-    body { display: block; }
+    body { 
+        display: block; 
+    }
 
     #sidebar { 
         position: fixed; 
@@ -201,7 +207,12 @@ body {
         box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
     }
 
-    #map { height: 100vh; } /* الخريطة تظل خلفية كاملة */
+    #map { 
+        height: 100vh; 
+    }
     
-    .tab-btn { padding: 15px; font-size: 16px; }
+    .tab-btn { 
+        padding: 15px; 
+        font-size: 16px; 
+    }
 }
