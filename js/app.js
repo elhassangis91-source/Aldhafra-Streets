@@ -1,9 +1,30 @@
 // 1. الإعدادات الأساسية للخريطة
-const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { 
-    maxZoom: 20, 
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] 
+// 1. تعريف أنواع الخرائط المختلفة (Base Maps)
+const baseMaps = {
+    "Google Maps": L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    }),
+    "Imagery (الأقمار الصناعية)": L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+    }),
+    "Light Gray (رمادي هادئ)": L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+    })
+};
+
+// 2. إعداد الخريطة مع النوع الافتراضي (Google Maps)
+const map = L.map('map', {
+    center: [23.65, 53.70],
+    zoom: 9,
+    layers: [baseMaps["Google Maps"]] // النوع اللي هيبدأ بيه
 });
-const map = L.map('map', { center: [23.65, 53.70], zoom: 9, layers: [googleStreets] });
+
+// 3. إضافة أداة الاختيار (Select Control) على الخريطة
+L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
 let allStreetsLayer, geojsonData, lastSelectedStreet = null;
 let lastFilteredReportData = []; 
