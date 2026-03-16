@@ -47,7 +47,12 @@ const normalizeArabic = (text) => {
 };
 
 // 2. تحميل البيانات
-fetch('data/AllStreets.json').then(r => r.json()).then(data => {
+fetch('data/AllStreets.json') // تأكد إن مفيش "/" في الأول لو المجلد في نفس المستوى
+    .then(r => {
+        if (!r.ok) throw new Error("الملف غير موجود أو المسار خطأ");
+        return r.json();
+    })
+    .then(data => {
     geojsonData = data;
     allStreetsLayer = L.geoJSON(data, {
         onEachFeature: function(feature, layer) {
@@ -63,7 +68,8 @@ fetch('data/AllStreets.json').then(r => r.json()).then(data => {
         }
     }).addTo(map);
     renderList(data.features);
-});
+})
+   .catch(err => console.error("مشكلة في جلب البيانات:", err)) ;
 
 // 3. مساعد الذكاء الاصطناعي الحواري
 function processAI(query) {
