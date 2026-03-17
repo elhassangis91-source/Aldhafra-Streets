@@ -1,10 +1,38 @@
-// 1. الإعدادات الأساسية ومتغيرات الحالة
-const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { 
-    maxZoom: 20, 
-    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] 
+// 1. تعريف الطبقات المختلفة (Base Maps)
+const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Google Maps'
 });
 
-const map = L.map('map', { center: [23.65, 53.70], zoom: 9, layers: [googleStreets] });
+const googleSatellite = L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Google Satellite'
+});
+
+const googleHybrid = L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: 'Google Hybrid'
+});
+
+// 2. إنشاء الخريطة مع الطبقة الافتراضية (Streets)
+const map = L.map('map', {
+    center: [23.65, 53.70],
+    zoom: 9,
+    layers: [googleStreets] // الطبقة اللي بتبدأ أول ما تفتح
+});
+
+// 3. تجهيز القائمة اللي هتظهر في الزرار
+const baseMaps = {
+    "خريطة جوجل": googleStreets,
+    "صور الأقمار الصناعية": googleSatellite,
+    "خريطة هجينة": googleHybrid
+};
+
+// 4. إضافة الزرار في جهة اليسار (Top Left)
+L.control.layers(baseMaps, null, { position: 'topleft' }).addTo(map);
 
 let allStreetsLayer, geojsonData, lastSelectedStreet = null;
 let lastFilteredReportData = []; // تخزين بيانات التقرير المفلترة
