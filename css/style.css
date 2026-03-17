@@ -1,218 +1,78 @@
-/* 1. الإعدادات الأساسية - تصفير المسافات */
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body { 
     font-family: 'Tajawal', sans-serif; 
     height: 100vh; 
     overflow: hidden; 
-    background: #f0f2f5; 
-    display: flex; /* وضع الكمبيوتر الافتراضي */
+    display: flex; 
 }
 
-/* 2. الخريطة: تملأ الخلفية بالكامل */
 #map { 
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    position: absolute; top: 0; left: 0; 
+    width: 100%; height: 100%; 
     z-index: 1; 
 }
 
-/* 3. القائمة الجانبية (Sidebar) - وضع الكمبيوتر */
 #sidebar { 
-    position: relative;
-    width: 350px; 
-    height: 100%;
-    background: #f8f9fa; 
-    border-left: 1px solid #ddd; 
-    display: flex; 
-    flex-direction: column; 
-    z-index: 1000; 
+    position: relative; width: 350px; height: 100%;
+    background: #fff; z-index: 1000;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    display: flex; flex-direction: column;
 }
 
-/* التبويبات (البحث و AI) */
-.sidebar-tabs { 
-    display: flex; 
-    background: #1a2a6c; 
-    padding: 5px; 
-    gap: 5px; 
-}
+.sidebar-content { display: flex; flex-direction: column; height: 100%; }
+
+.sidebar-tabs { display: flex; background: #1a2a6c; padding: 5px; gap: 5px; }
 
 .tab-btn { 
-    flex: 1; 
-    padding: 12px; 
-    border: none; 
-    background: rgba(255,255,255,0.1); 
-    color: white; 
-    cursor: pointer; 
-    border-radius: 4px; 
-    font-family: 'Tajawal'; 
-    font-size: 14px; 
+    flex: 1; padding: 12px; border: none; background: rgba(255,255,255,0.1);
+    color: white; cursor: pointer; font-family: 'Tajawal'; border-radius: 4px;
 }
 
-.tab-btn.active { 
-    background: white; 
-    color: #1a2a6c; 
-    font-weight: bold; 
-}
+.tab-btn.active { background: white; color: #1a2a6c; font-weight: bold; }
 
-.tab-content { 
-    display: none; 
-    flex-direction: column; 
-    height: 100%; 
-    overflow: hidden; 
-}
+.tab-content { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+.tab-content.active { display: flex; }
 
-.tab-content.active { 
-    display: flex; 
-}
-
-/* 4. تنسيق مربع البحث (منظم وبدون تداخل) */
-.sidebar-header { 
-    padding: 15px; 
-    background: #ffffff; 
-    border-bottom: 1px solid #eee; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 10px;
-}
-
+.sidebar-header { padding: 15px; border-bottom: 1px solid #eee; background: #fff; }
 #searchBox { 
-    width: 100%; 
-    padding: 12px 15px; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    outline: none; 
-    font-family: 'Tajawal';
-    font-size: 14px;
-}
-
-#searchBox:focus { 
-    border-color: #1a2a6c; 
-    box-shadow: 0 0 5px rgba(26, 42, 108, 0.1);
+    width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;
+    font-family: 'Tajawal'; outline: none; font-size: 14px;
 }
 
 #resultsList { 
     flex: 1; 
     overflow-y: auto; 
     padding: 10px; 
+    background: #fdfdfd;
 }
+
+/* تخصيص شريط السحب */
+#resultsList::-webkit-scrollbar { width: 6px; }
+#resultsList::-webkit-scrollbar-thumb { background: #1a2a6c; border-radius: 10px; }
 
 .street-item { 
-    padding: 12px; 
-    border-bottom: 1px solid #eee; 
-    cursor: pointer; 
+    padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: 0.2s;
 }
+.street-item:hover { background: #f0f2f5; border-right: 4px solid #1a2a6c; }
 
-.street-item:hover { 
-    background: #e9ecef; 
-}
+/* الـ AI Chat */
+.chat-container { display: flex; flex-direction: column; height: 100%; background: #f4f7f6; }
+#chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+.user-msg, .bot-msg { max-width: 85%; padding: 10px 15px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+.user-msg { align-self: flex-start; background: #1a2a6c; color: white; border-bottom-left-radius: 2px; }
+.bot-msg { align-self: flex-end; background: #fff; color: #333; border: 1px solid #ddd; border-bottom-right-radius: 2px; }
 
-/* 5. منطقة الدردشة (مساعد AI) */
-.chat-container { 
-    display: flex; 
-    flex-direction: column; 
-    height: 100%; 
-    position: relative; 
-    background: white; 
-}
+.chat-input-area { padding: 12px; display: flex; gap: 8px; background: white; border-top: 1px solid #eee; }
+#ai-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; outline: none; font-family: 'Tajawal'; }
+#send-ai-btn { background: #1a2a6c; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; }
 
-#chat-box { 
-    flex: 1; 
-    overflow-y: auto; 
-    padding: 15px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
-    padding-bottom: 80px; /* مساحة لمربع الكتابة */
-}
-
-.user-msg, .bot-msg { 
-    max-width: 85%; 
-    padding: 10px 15px; 
-    border-radius: 12px; 
-    font-size: 14px; 
-    line-height: 1.5;
-}
-
-.user-msg { 
-    align-self: flex-start; 
-    background: #1a2a6c; 
-    color: white; 
-    border-bottom-left-radius: 2px; 
-}
-
-.bot-msg { 
-    align-self: flex-end; 
-    background: #e9ecef; 
-    color: #333; 
-    border-bottom-right-radius: 2px; 
-    direction: rtl; 
-}
-
-/* مربع الكتابة الثابت في الأسفل */
-.chat-input-area { 
-    position: absolute; 
-    bottom: 0; 
-    left: 0; 
-    right: 0; 
-    display: flex; 
-    gap: 8px; 
-    padding: 12px; 
-    background: white; 
-    border-top: 1px solid #eee; 
-    z-index: 10; 
-}
-
-#ai-input { 
-    flex: 1; 
-    padding: 10px; 
-    border: 1px solid #ddd; 
-    border-radius: 8px; 
-    outline: none; 
-    font-size: 16px; 
-}
-
-#send-ai-btn { 
-    background: #1a2a6c; 
-    color: white; 
-    border: none; 
-    padding: 10px 15px; 
-    border-radius: 8px; 
-    cursor: pointer; 
-}
-
-/* 6. إعدادات الجوال (عائمة أسفل الشاشة) */
+/* 📱 إعدادات الجوال */
 @media (max-width: 768px) {
-    body { 
-        display: block; 
-    }
-
+    body { display: block; }
     #sidebar { 
-        position: fixed; 
-        bottom: 0; 
-        left: 0; 
-        right: 0; 
-        width: 100%; 
-        height: 45vh; /* يغطي الجزء السفلي فقط */
-        border-left: none;
-        border-top: 3px solid #1a2a6c;
-        border-top-left-radius: 20px;
-        border-top-right-radius: 20px;
-        box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 45vh;
+        border-radius: 20px 20px 0 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
     }
-
-    #map { 
-        height: 100vh; 
-    }
-    
-    .tab-btn { 
-        padding: 15px; 
-        font-size: 16px; 
-    }
+    #map { height: 55vh; }
 }
