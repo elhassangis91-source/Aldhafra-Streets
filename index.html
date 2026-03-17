@@ -11,28 +11,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script>
-    function openTab(tabId) {
-        // إخفاء المحتويات
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        // إلغاء تفعيل الأزرار
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        
-        // إظهار التبويب المختار
-        const selectedTab = document.getElementById(tabId);
-        if (selectedTab) selectedTab.classList.add('active');
-        
-        // تفعيل الزرار اللي اضغط عليه
-        if (window.event && window.event.currentTarget) {
-            window.event.currentTarget.classList.add('active');
-        }
-    }
-</script>
 </head>
 <body>
 
     <div id="sidebar">
-        <div id="resizer"></div>
         <div class="sidebar-content">
             <div class="sidebar-tabs">
                 <button class="tab-btn active" onclick="openTab('search-tab')">🔍 البحث</button>
@@ -54,7 +36,7 @@
                         <input type="text" id="ai-input" placeholder="اكتب سؤالك أو اطلب تقريرًا...">
                         <button id="send-ai-btn">إرسال</button>
                     </div>
-                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -62,21 +44,35 @@
     <div id="map"></div>
 
     <div id="exportModal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(3px);">
-        <div style="background:white; width:320px; margin:15% auto; padding:25px; border-radius:12px; text-align:center; font-family:'Tajawal'; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <div style="background:white; width:320px; margin:15% auto; padding:25px; border-radius:12px; text-align:center; font-family:'Tajawal';">
             <h3 style="color:#1a2a6c; margin-bottom:15px;">حفظ التقرير</h3>
-            <p style="font-size:14px; color:#666; margin-bottom:20px;">يرجى تحديد الصيغة المناسبة لتحميل البيانات:</p>
-            <select id="fileFormat" style="width:100%; padding:12px; margin-bottom:25px; border-radius:6px; border:1px solid #ddd; font-family:'Tajawal';">
+            <p style="font-size:14px; color:#666; margin-bottom:20px;">اختر الصيغة المناسبة للتحميل:</p>
+            <select id="fileFormat" style="width:100%; padding:10px; margin-bottom:20px; border-radius:6px; font-family:'Tajawal';">
                 <option value="pdf">ملف PDF (للطباعة)</option>
                 <option value="excel">ملف Excel (للبيانات)</option>
             </select>
-            <div style="display:flex; gap:12px;">
-                <button onclick="executeExport()" style="flex:1; background:#27ae60; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">حفظ</button>
-                <button onclick="closeExportModal()" style="flex:1; background:#95a5a6; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer;">إلغاء</button>
+            <div style="display:flex; gap:10px;">
+                <button onclick="executeExport()" style="flex:1; background:#27ae60; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;">حفظ</button>
+                <button onclick="closeExportModal()" style="flex:1; background:#95a5a6; color:white; border:none; padding:10px; border-radius:6px; cursor:pointer;">إلغاء</button>
             </div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/app.js?v=2026"></script>
+    <div id="exportModal" style="display:none; position:fixed; z-index:10000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); backdrop-filter: blur(3px);">
+    <div style="background:white; width:350px; margin:15% auto; padding:25px; border-radius:12px; text-align:center; font-family:'Tajawal', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <h3 style="color:#1a2a6c; margin-bottom:15px;">حفظ التقرير الذكي</h3>
+        <p id="modalMsg" style="font-size:14px; color:#666; margin-bottom:20px;">يرجى اختيار الصيغة المناسبة لتحميل البيانات:</p>
+        <select id="fileFormat" style="width:100%; padding:12px; margin-bottom:25px; border-radius:6px; border:1px solid #ddd; font-family:'Tajawal';">
+            <option value="pdf">ملف PDF (للطباعة)</option>
+            <option value="excel">ملف Excel (للبيانات)</option>
+        </select>
+        <div style="display:flex; gap:12px;">
+            <button onclick="executeExport()" style="flex:1; background:#27ae60; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold;">تأكيد الحفظ</button>
+            <button onclick="closeExportModal()" style="flex:1; background:#95a5a6; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer;">إلغاء</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
