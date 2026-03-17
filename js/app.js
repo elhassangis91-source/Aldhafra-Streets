@@ -1,98 +1,200 @@
-// 1. تعريف المتغيرات العامة
-let map, allStreetsLayer, geojsonData;
+// 1. الإعدادات الأساسية ومتغيرات الحالة
+const googleStreets = L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { 
+    maxZoom: 20, 
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'] 
+});
 
-// 2. دالة فتح التبويبات (Tabs) - لازم تكون window عشان الـ HTML يشوفها
-window.openTab = function(tabId, event) {
+const map = L.map('map', { center: [23.65, 53.70], zoom: 9, layers: [googleStreets] });
+
+let allStreetsLayer, geojsonData, lastSelectedStreet = null;
+let lastFilteredReportData = []; // تخزين بيانات التقرير المفلترة
+let awaitingExportConfirmation = false; // حالة انتظار تأكيد الحفظ
+
+// 2. دوال النظام الأساسية (التبويبات ومعالجة النصوص)
+window.openTab = function(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) selectedTab.classList.add('active');
+    if (window.event && window.event.currentTarget) window.event.currentTarget.classList.add('active');
+}
+
+const normalizeArabic = (text) => {
+    if (!text) return "";
+    return String(text)
+        .replace(/[\u064B-\u0652]/g, "") // حذف التشكيل
+        .replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+        .replace(/\s+/g, " ").trim().toLowerCase();
 };
 
-// 3. تشغيل الخريطة والبيانات عند تحميل الصفحة
-window.onload = function() {
-    // إنشاء الخريطة
-    map = L.map('map').setView([23.65, 53.70], 9);
+// 3. تحميل البيانات وتنسيق الخريطة
+fetch('data/AllStreets.json').then(r => r.json()).then(data => {
+    geojsonData = data;
+    allStreetsLayer = L.geoJSON(data, {
+        onEachFeature: function(feature, layer) {
+            const props = feature.properties;
+            const status = props.Status || "غير محدد";
+            let statusColor = status.includes("غير منفذ") ? "#e67e22" : (status.includes("منفذ") ? "#27ae60" : "#34495e");
 
-    // إضافة خريطة جوجل
-    L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20, subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+            layer.setStyle({ color: "#1a2a6c", weight: 60, opacity: 0 });
+            const vLine = L.polyline(layer.getLatLngs(), { color: "#1a2a6c", weight: 1.5, opacity: 0.5, interactive: false }).addTo(map);
+            layer.visibleLine = vLine;
+
+            const popupHTML = `
+                <div style="direction:rtl; text-align:right; font-family: 'Tajawal', sans-serif;">
+                    <strong style="font-size:16px; color:#2c3e50;">${props.Name_Ar || 'غير مسمى'}</strong><br>
+                    <span style="font-size:13px; color:#95a5a6;">${props.Name_En || ''}</span><hr style="margin:8px 0;">
+                    <b>المنطقة الجغرافية:</b> ${props.DistrictName_Arabic || '-'}<br>
+                    <b>حالة تنفيذ اللوحات:</b> <span style="color:${statusColor}; font-weight:bold;">${status}</span>
+                </div>`;
+            layer.bindPopup(popupHTML);
+            layer.on('click', () => { highlightStreet(layer); lastSelectedStreet = feature; });
+        }
     }).addTo(map);
+    renderList(data.features);
+});
 
-    // تحميل البيانات (Fetch)
-    fetch(`data/AllStreets.json?v=${new Date().getTime()}`)
-        .then(res => res.json())
-        .then(data => {
-            geojsonData = data;
-            
-            // رسم الشوارع على الخريطة
-            allStreetsLayer = L.geoJSON(data, {
-                style: { color: "#1a2a6c", weight: 2, opacity: 0.6 },
-                onEachFeature: function(feature, layer) {
-                    layer.bindPopup(`<b>${feature.properties.Name_Ar}</b>`);
-                    layer.on('click', () => highlightStreet(layer));
-                }
-            }).addTo(map);
+// 4. وظائف التفاعل (التمييز وحساب الأطوال)
+function highlightStreet(layer) {
+    allStreetsLayer.eachLayer(l => { if (l.visibleLine) l.visibleLine.setStyle({ color: "#1a2a6c", weight: 1.5, opacity: 0.5 }); });
+    if (layer.visibleLine) { layer.visibleLine.setStyle({ color: "#ff0000", weight: 8, opacity: 1 }).bringToFront(); }
+    layer.openPopup();
+}
 
-            // عرض عينة بسيطة في القائمة أول ما يفتح (عشان السرعة)
-            renderList(data.features.slice(0, 15));
-            document.getElementById('stats').innerText = `تم تحميل ${data.features.length} شارع`;
+function calculateFixedLength(name) {
+    const segments = geojsonData.features.filter(f => normalizeArabic(f.properties.Name_Ar) === normalizeArabic(name));
+    if (segments.length === 0) return 0;
+    let rawTotal = 0;
+    segments.forEach(seg => {
+        const coords = seg.geometry.coordinates;
+        if (seg.geometry.type === "LineString") {
+            for (let i = 0; i < coords.length - 1; i++) rawTotal += L.latLng(coords[i][1], coords[i][0]).distanceTo(L.latLng(coords[i+1][1], coords[i+1][0]));
+        } else if (seg.geometry.type === "MultiLineString") {
+            coords.forEach(line => { for (let i = 0; i < line.length - 1; i++) rawTotal += L.latLng(line[i][1], line[i][0]).distanceTo(L.latLng(line[i+1][1], line[i+1][0])); });
+        }
+    });
+    return rawTotal;
+}
+
+// 5. محرك الذكاء الاصطناعي (المطور لدعم المدن المتعددة والبحث الذكي)
+function processAI(query) {
+    const qNorm = normalizeArabic(query);
+    const qText = qNorm.replace(/[؟?]/g, "");
+
+    // أ. التحقق من رد التأكيد للحفظ
+    const positiveReplies = ["نعم", "ايوه", "اجل", "طبعا", "حفظ", "اوكي", "تصدير", "اطبع"];
+    if (awaitingExportConfirmation && positiveReplies.some(word => qText.includes(word))) {
+        awaitingExportConfirmation = false;
+        showExportModal();
+        return;
+    } else if (awaitingExportConfirmation) {
+        awaitingExportConfirmation = false;
+    }
+
+    // ب. نظام الإحصائيات (دعم عدة مدن في استعلام واحد)
+    const isReportRequested = qText.includes("تقرير") || qText.includes("اطبع") || qText.includes("حفظ");
+    if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("كم شارع") || isReportRequested) {
+        const districts = [...new Set(geojsonData.features.map(f => f.properties.DistrictName_Arabic).filter(Boolean))];
+        let targetDistricts = [];
+
+        districts.forEach(d => {
+            const coreName = normalizeArabic(d).replace(/\b(منطقه|مدينه)\b/g, "").trim();
+            if (coreName && qText.includes(coreName)) targetDistricts.push(d);
         });
-};
 
-// 4. دالة البحث السلسة (اللي اتكلمنا عنها)
-document.getElementById('searchBox').addEventListener('input', function() {
-    if (!geojsonData) return;
+        let targetStatus = null;
+        if (qText.includes("منفذ")) targetStatus = qText.includes("غير") ? "غير منفذ" : "منفذ";
 
-    const value = this.value.toLowerCase().trim();
+        let filteredData = geojsonData.features;
+        if (targetDistricts.length > 0) {
+            filteredData = filteredData.filter(f => targetDistricts.includes(f.properties.DistrictName_Arabic));
+        }
+        if (targetStatus) {
+            filteredData = filteredData.filter(f => {
+                const status = f.properties.Status || "";
+                return targetStatus === "غير منفذ" ? status.includes("غير منفذ") : (status.includes("منفذ") && !status.includes("غير منفذ"));
+            });
+        }
 
-    // لو البحث فاضي، اعرض عينة بسيطة
-    if (value === "") {
-        renderList(geojsonData.features.slice(0, 15));
+        lastFilteredReportData = filteredData.map(f => ({
+            "الرقم التعريفي": f.properties.RoadID || "-",
+            "الاسم العربي": f.properties.Name_Ar || "-",
+            "المنطقة": f.properties.DistrictName_Arabic || "-",
+            "الحالة": f.properties.Status || "-"
+        }));
+
+        const count = filteredData.length;
+        let statusLabel = targetStatus === "غير منفذ" ? "غير المنفذة " : (targetStatus === "منفذ" ? "المنفذة " : "");
+        let districtsLabel = targetDistricts.length > 0 ? `في (${targetDistricts.join(" و ")})` : "في النظام";
+        
+        addMessage(`بناءً على طلبك، يوجد (${count}) شارعاً ${statusLabel}${districtsLabel}. هل تود استخراج تقرير بهذه البيانات؟`, 'bot');
+        awaitingExportConfirmation = true;
         return;
     }
 
-    // الفلترة اللحظية
-    const filtered = geojsonData.features.filter(f => {
-        const name = (f.properties.Name_Ar || "").toLowerCase();
-        const id = String(f.properties.RoadID);
-        return name.includes(value) || id.includes(value);
-    });
-
-    // عرض النتايج (بحد أقصى 100 عشان الجهاز ما يهنجش)
-    renderList(filtered.slice(0, 100));
-});
-
-// 5. دالة إنشاء القائمة
-function renderList(features) {
-    const list = document.getElementById('resultsList');
-    if (!list) return;
-    list.innerHTML = '';
+    // ج. البحث عن شارع أو طول شارع (تطوير منطق استخلاص المسمى)
+    const isLengthQuery = qText.includes("طول") || qText.includes("كم متر") || qText.includes("كم كيلو");
+    const stopWords = /\b(اين|يقع|فين|شارع|طريق|كم|طوله|طول|منطقه|مدينه|هو|هي|اريد|معرفه)\b/g;
+    const qClean = qText.replace(stopWords, "").trim();
     
-    features.forEach(f => {
-        const div = document.createElement('div');
-        div.className = 'street-item';
-        div.innerHTML = `<b>${f.properties.Name_Ar}</b><br><small>ID: ${f.properties.RoadID}</small>`;
-        
-        div.onclick = () => {
-            allStreetsLayer.eachLayer(l => {
-                if (String(l.feature.properties.RoadID) === String(f.properties.RoadID)) {
-                    highlightStreet(l);
-                    map.fitBounds(l.getBounds(), { maxZoom: 18 });
-                }
-            });
-        };
-        list.appendChild(div);
-    });
+    let currentMatch = null;
+    if (qClean.length > 2) {
+        geojsonData.features.forEach(f => {
+            const sName = normalizeArabic(f.properties.Name_Ar);
+            if (sName && (qClean.includes(sName) || sName.includes(qClean))) currentMatch = f;
+        });
+    }
+
+    let targetStreet = currentMatch || (isLengthQuery ? lastSelectedStreet : null);
+
+    if (targetStreet) {
+        lastSelectedStreet = targetStreet;
+        const name = targetStreet.properties.Name_Ar;
+        if (isLengthQuery) {
+            const lengthKm = (calculateFixedLength(name) / 1000).toFixed(2);
+            addMessage(`يبلغ الطول الإجمالي لشارع "${name}" حوالي ${lengthKm} كم.`, 'bot');
+        } else {
+            addMessage(`تم العثور على شارع "${name}" في منطقة ${targetStreet.properties.DistrictName_Arabic || 'الظفرة'}.`, 'bot');
+        }
+        zoomToStreet(targetStreet);
+    } else {
+        addMessage("نعتذر، لم أفهم طلبك. يرجى تحديد اسم الشارع أو المنطقة بوضوح.", "bot");
+    }
 }
 
-// 6. دالة تمييز الشارع (Highlight)
-function highlightStreet(layer) {
-    allStreetsLayer.eachLayer(l => l.setStyle({ color: "#1a2a6c", weight: 2 }));
-    layer.setStyle({ color: "red", weight: 6 }).bringToFront();
+// 6. وظائف التصدير (PDF & Excel)
+function showExportModal() { document.getElementById('exportModal').style.display = 'block'; }
+function closeExportModal() { document.getElementById('exportModal').style.display = 'none'; }
+function executeExport() {
+    const format = document.getElementById('fileFormat').value;
+    const dateStr = new Date().toLocaleDateString('ar-EG');
+    if (format === 'pdf') {
+        const printContent = document.createElement('div');
+        printContent.style.direction = 'rtl';
+        printContent.style.padding = '20px';
+        printContent.style.fontFamily = "'Tajawal', sans-serif";
+        printContent.innerHTML = `
+            <h2 style="text-align:center; color:#1a2a6c;">تقرير شوارع منطقة الظفرة</h2>
+            <p style="text-align:center;">تاريخ التقرير: ${dateStr}</p>
+            <table border="1" style="width:100%; border-collapse:collapse; text-align:center; margin-top:20px;">
+                <thead><tr style="background:#f2f2f2;"><th>ID</th><th>الاسم</th><th>المنطقة</th><th>الحالة</th></tr></thead>
+                <tbody>${lastFilteredReportData.map(d => `<tr><td>${d["الرقم التعريفي"]}</td><td>${d["الاسم العربي"]}</td><td>${d["المنطقة"]}</td><td>${d["الحالة"]}</td></tr>`).join('')}</tbody>
+            </table>`;
+        html2pdf().set({ margin: 10, filename: `تقرير_الظفرة.pdf`, jsPDF: { orientation: 'landscape' } }).from(printContent).save().then(closeExportModal);
+    } else {
+        const ws = XLSX.utils.json_to_sheet(lastFilteredReportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "الشوارع");
+        XLSX.writeFile(wb, `تقرير_شوارع_الظفرة.xlsx`);
+        closeExportModal();
+    }
 }
 
-// 5. محرك الذكاء الاصطناعي (AI Engine)
+// 7. واجهة المستخدم والبحث
+function zoomToStreet(feature) {
+    allStreetsLayer.eachLayer(l => { if (l.feature === feature) { highlightStreet(l); map.flyToBounds(l.getBounds(), { maxZoom: 16 }); } });
+}
+
 function addMessage(text, side) {
     const box = document.getElementById('chat-box');
     const msg = document.createElement('div');
@@ -102,50 +204,41 @@ function addMessage(text, side) {
     box.scrollTop = box.scrollHeight;
 }
 
-function processAI(query) {
-    const q = query.trim().toLowerCase();
-    
-    // أ- الرد على التحية
-    const greetings = ["مرحبا", "اهلا", "السلام عليكم", "صباح الخير", "هلا"];
-    if (greetings.some(g => q.includes(g))) {
-        addMessage("أهلاً بك في منصة الظفرة الذكية! كيف يمكنني مساعدتك في البحث عن الشوارع اليوم؟", "bot");
-        return;
-    }
-
-    // ب- البحث عن شارع معين عبر الـ AI
-    const found = geojsonData.features.find(f => q.includes(f.properties.Name_Ar.toLowerCase()));
-    if (found) {
-        addMessage(`وجدت لك ${found.properties.Name_Ar}. جاري تحديده على الخريطة...`, "bot");
-        allStreetsLayer.eachLayer(l => {
-            if (l.feature.properties.RoadID === found.properties.RoadID) {
-                highlightStreet(l);
-                map.flyToBounds(l.getBounds(), { maxZoom: 17 });
-            }
-        });
-    } else {
-        addMessage("عذراً، لم أجد شارعاً بهذا الاسم. يرجى كتابة اسم الشارع بشكل صحيح.", "bot");
-    }
-}
-
-// 6. تشغيل واجهة الدردشة عند التحميل
-document.addEventListener('DOMContentLoaded', () => {
+window.onload = () => {
+    addMessage("أهلاً بك! أنا مساعدك الذكي. اسألني عن الشوارع، الإحصائيات، أو اطلب تقريراً.", "bot");
     const sendBtn = document.getElementById('send-ai-btn');
     const input = document.getElementById('ai-input');
+    const send = () => { if (input.value) { addMessage(input.value, 'user'); processAI(input.value); input.value = ''; } };
+    if(sendBtn) sendBtn.onclick = send;
+    if(input) input.onkeypress = (e) => { if(e.key === 'Enter') send(); };
+};
 
-    if (sendBtn && input) {
-        sendBtn.onclick = () => {
-            if (input.value.trim()) {
-                addMessage(input.value, "user");
-                processAI(input.value);
-                input.value = '';
-            }
+document.getElementById('searchBox').oninput = (e) => {
+    let rawTerm = e.target.value.trim();
+    const termNorm = normalizeArabic(rawTerm.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)));
+    const filtered = geojsonData.features.filter(f => {
+        return normalizeArabic(f.properties.Name_Ar).includes(termNorm) || String(f.properties.RoadID).includes(termNorm);
+    });
+    renderList(filtered);
+};
+
+function renderList(features) {
+    const list = document.getElementById('resultsList');
+    list.innerHTML = '';
+    features.slice(0, 100).forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'street-item';
+        div.innerHTML = `<b>${f.properties.Name_Ar || 'غير مسمى'}</b><br><small>ID: ${f.properties.RoadID || '-'}</small>`;
+        div.onclick = () => {
+            allStreetsLayer.eachLayer(l => {
+                if (String(l.feature.properties.RoadID) === String(f.properties.RoadID)) {
+                    lastSelectedStreet = f;
+                    highlightStreet(l);
+                    map.flyToBounds(l.getBounds(), { maxZoom: 18 });
+                }
+            });
         };
-        input.onkeypress = (e) => { if (e.key === 'Enter') sendBtn.click(); };
-    }
-});
-
-// دالة تنظيف النص العربي
-function normalizeArabic(text) {
-    if (!text) return "";
-    return text.replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").trim();
+        list.appendChild(div);
+    });
+    document.getElementById('stats').innerText = `العناصر الظاهرة: ${features.length}`;
 }
