@@ -109,7 +109,7 @@ function processAI(query) {
     const qNorm = normalizeArabic(query);
     const qText = qNorm.replace(/[؟?]/g, "");
 
-    // أ. التحقق من رد التأكيد للحفظ
+    // أ. التحقق من رد التأكيد للحفظ (PDF/Excel)
     const positiveReplies = ["نعم", "ايوه", "اجل", "طبعا", "حفظ", "اوكي", "تصدير", "اطبع"];
     if (awaitingExportConfirmation && positiveReplies.some(word => qText.includes(word))) {
         awaitingExportConfirmation = false;
@@ -119,24 +119,36 @@ function processAI(query) {
         awaitingExportConfirmation = false;
     }
 
-    // ب. نظام الإحصائيات (دعم عدة مدن في استعلام واحد)
+    // ب. نظام الإحصائيات (دعم الأعيان + المدن + الحالات)
     const isReportRequested = qText.includes("تقرير") || qText.includes("اطبع") || qText.includes("حفظ");
+    const isAyanQuery = qText.includes("اعيان") || qText.includes("الاعيان"); // التعرف على مسمى الأعيان
+
     if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("كم شارع") || isReportRequested) {
         const districts = [...new Set(geojsonData.features.map(f => f.properties.DistrictName_Arabic).filter(Boolean))];
         let targetDistricts = [];
 
+        // التعرف على المدن المذكورة
         districts.forEach(d => {
             const coreName = normalizeArabic(d).replace(/\b(منطقه|مدينه)\b/g, "").trim();
             if (coreName && qText.includes(coreName)) targetDistricts.push(d);
         });
 
+        // التعرف على الحالة (منفذ/غير منفذ)
         let targetStatus = null;
         if (qText.includes("منفذ")) targetStatus = qText.includes("غير") ? "غير منفذ" : "منفذ";
 
+        // تنفيذ الفلترة
         let filteredData = geojsonData.features;
+
+        // 1. فلترة الأعيان بناءً على الحقل RoadClassNew
+        if (isAyanQuery) {
+            filteredData = filteredData.filter(f => String(f.properties.RoadClassNew) === "2");
+        }
+        // 2. فلترة المدن
         if (targetDistricts.length > 0) {
             filteredData = filteredData.filter(f => targetDistricts.includes(f.properties.DistrictName_Arabic));
         }
+        // 3. فلترة الحالة
         if (targetStatus) {
             filteredData = filteredData.filter(f => {
                 const status = f.properties.Status || "";
@@ -144,6 +156,7 @@ function processAI(query) {
             });
         }
 
+        // تحضير بيانات التقرير (نفس الأعمدة الأصلية دون تغيير)
         lastFilteredReportData = filteredData.map(f => ({
             "الرقم التعريفي": f.properties.RoadID || "-",
             "الاسم العربي": f.properties.Name_Ar || "-",
@@ -152,19 +165,18 @@ function processAI(query) {
         }));
 
         const count = filteredData.length;
+        let ayanLabel = isAyanQuery ? "من شوارع الأعيان " : "";
         let statusLabel = targetStatus === "غير منفذ" ? "غير المنفذة " : (targetStatus === "منفذ" ? "المنفذة " : "");
         let districtsLabel = targetDistricts.length > 0 ? `في (${targetDistricts.join(" و ")})` : "في النظام";
         
-        addMessage(`بناءً على طلبك، يوجد (${count}) شارعاً ${statusLabel}${districtsLabel}. هل تود استخراج تقرير بهذه البيانات؟`, 'bot');
+        addMessage(`بناءً على طلبك، يوجد (${count}) شارعاً ${ayanLabel}${statusLabel}${districtsLabel}. هل تود استخراج تقرير بهذه البيانات؟`, 'bot');
         awaitingExportConfirmation = true;
         return;
     }
 
-    // ج. البحث عن شارع أو طول شارع (تطوير منطق استخلاص المسمى)
-    const isLengthQuery = qText.includes("طول") || qText.includes("كم متر") || qText.includes("كم كيلو");
-    const stopWords = /\b(اين|يقع|فين|شارع|طريق|كم|طوله|طول|منطقه|مدينه|هو|هي|اريد|معرفه)\b/g;
+    // ج. البحث عن اسم شارع أو طوله (المنطق الافتراضي)
+    const stopWords = /\b(اين|يقع|فين|شارع|طريق|كم|طوله|طول|منطقه|مدينه|هو|هي)\b/g;
     const qClean = qText.replace(stopWords, "").trim();
-    
     let currentMatch = null;
     if (qClean.length > 2) {
         geojsonData.features.forEach(f => {
@@ -173,12 +185,11 @@ function processAI(query) {
         });
     }
 
-    let targetStreet = currentMatch || (isLengthQuery ? lastSelectedStreet : null);
-
+    let targetStreet = currentMatch || (qText.includes("طول") ? lastSelectedStreet : null);
     if (targetStreet) {
         lastSelectedStreet = targetStreet;
         const name = targetStreet.properties.Name_Ar;
-        if (isLengthQuery) {
+        if (qText.includes("طول")) {
             const lengthKm = (calculateFixedLength(name) / 1000).toFixed(2);
             addMessage(`يبلغ الطول الإجمالي لشارع "${name}" حوالي ${lengthKm} كم.`, 'bot');
         } else {
@@ -186,7 +197,7 @@ function processAI(query) {
         }
         zoomToStreet(targetStreet);
     } else {
-        addMessage("نعتذر، لم أفهم طلبك. يرجى تحديد اسم الشارع أو المنطقة بوضوح.", "bot");
+        addMessage("نعتذر، لم أفهم المطلب. يمكنك السؤال عن شوارع الأعيان أو طلب تقارير للمناطق.", "bot");
     }
 }
 
