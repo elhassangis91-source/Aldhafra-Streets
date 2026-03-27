@@ -123,7 +123,7 @@ function processAI(query) {
     const isReportRequested = qText.includes("تقرير") || qText.includes("اطبع") || qText.includes("حفظ");
     const isAyanQuery = qText.includes("اعيان") || qText.includes("الاعيان"); // التعرف على مسمى الأعيان
 
-    if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("كم شارع") || isReportRequested) {
+    if (qText.includes("عدد") || qText.includes("احصائ") || qText.includes("اسماء") || qText.includes("كم") || qText.includes("شوارع") || qText.includes("طرق") || qText.includes("كم شارع") || isReportRequested) {
         const districts = [...new Set(geojsonData.features.map(f => f.properties.DistrictName_Arabic).filter(Boolean))];
         let targetDistricts = [];
 
