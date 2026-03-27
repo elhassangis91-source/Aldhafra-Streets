@@ -133,9 +133,16 @@ function processAI(query) {
             if (coreName && qText.includes(coreName)) targetDistricts.push(d);
         });
 
-        // التعرف على الحالة (منفذ/غير منفذ)
+        // التعرف على الحالة (منفذ / تم التنفيذ / لم تنفذ / إلخ)
         let targetStatus = null;
-        if (qText.includes("منفذ")) targetStatus = qText.includes("غير") ? "غير منفذ" : "منفذ";
+
+        // التحقق من وجود نفي (لم، غير) أو كلمات تدل على عدم التنفيذ
+        const isNegative = qText.includes("غير") || qText.includes("لم");
+
+        // التحقق مما إذا كان النص يحتوي على أصل كلمة "نفذ"
+        if (qText.includes("منفذ") || qText.includes("تنفيذ")) {
+        targetStatus = isNegative ? "غير منفذ" : "منفذ";
+        }
 
         // تنفيذ الفلترة
         let filteredData = geojsonData.features;
