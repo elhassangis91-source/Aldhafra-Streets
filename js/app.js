@@ -140,7 +140,7 @@ function processAI(query) {
         const isNegative = qText.includes("غير") || qText.includes("لم");
 
         // التحقق مما إذا كان النص يحتوي على أصل كلمة "نفذ"
-        if (qText.includes("منفذ") || qText.includes("تنفيذ")) {
+        if (qText.includes("منفذ") || qText.includes("تنفيذ") || qText.includes("تنفذ")) {
         targetStatus = isNegative ? "غير منفذ" : "منفذ";
         }
 
